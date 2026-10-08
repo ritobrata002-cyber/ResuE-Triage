@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RescuE-Triage | Dynamic Risk-Weighted Triage Router</title>
+  <meta name="description" content="Algorithmic Decision-Support System for Emergency Dispatchers using Dynamic Emergency Priority Index (DEPI)">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="logo-badge">
+        <span class="pulsing-beacon"></span>
+        <span class="logo-title">RescuE-Triage</span>
+      </div>
+      <div class="header-tagline">
+        <span class="tag-pill">DEPI Core v2.4</span>
+        <span class="tag-desc">Dynamic Risk-Weighted Emergency Triage Router</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="clock-display" id="systemClock">CLOCK: --:--:--</div>
+      <button class="btn-icon" id="soundToggleBtn" title="Toggle Audio Siren Alerts">🔊 Siren: ON</button>
+      <button class="btn btn-secondary" id="openBenchmarkBtn">⚡ Benchmark O(log N)</button>
+      <button class="btn btn-primary" id="openModalCallBtn">+ New Distress Call</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="dashboard-grid">
+    <!-- Top KPI Metric Strip -->
+    <section class="kpi-strip">
+      <div class="kpi-card glass-panel" id="kpiQueuedCard">
+        <div class="kpi-label">ACTIVE IN QUEUE</div>
+        <div class="kpi-value text-blue" id="kpiQueued">0</div>
+        <div class="kpi-sub">Priority Max-Heap</div>
+      </div>
+      <div class="kpi-card glass-panel" id="kpiCriticalCard">
+        <div class="kpi-label">CODE RED (CRITICAL)</div>
+        <div class="kpi-value text-red" id="kpiCritical">0</div>
+        <div class="kpi-sub">Immediate Deployment</div>
+      </div>
+      <div class="kpi-card glass-panel">
+        <div class="kpi-label">AVG DEPI PRIORITY</div>
+        <div class="kpi-value text-amber" id="kpiAvgDepi">0.0</div>
+        <div class="kpi-sub">Weighted Index / 100</div>
+      </div>
+      <div class="kpi-card glass-panel">
+        <div class="kpi-label">FLEET READINESS</div>
+        <div class="kpi-value text-emerald" id="kpiFleet">6 / 6</div>
+        <div class="kpi-sub">Rescue Units Avail</div>
+      </div>
+    </section>
+
+    <!-- Content Split: Queue Table (Left 70%) & Control/Map (Right 30%) -->
+    <div class="workspace-layout">
+      <!-- Left Panel: Live Queue -->
+      <section class="queue-section glass-panel">
+        <div class="section-header">
+          <div class="header-title-group">
+            <h2>🚨 Real-Time Priority Queue (DEPI Max-Heap)</h2>
+            <p class="section-subtext">Automatic wait-time aging prevents low-risk starvation while routing acute life threats to root.</p>
+          </div>
+          <div class="action-btn-group">
+            <button class="btn btn-danger pulse-action" id="dispatchTopBtn">⚡ DISPATCH TOP PRIORITY</button>
+            <button class="btn btn-outline" id="loadPresetFloodBtn">🌊 Flood Scenario</button>
+            <button class="btn btn-outline" id="loadPresetQuakeBtn">🏚️ Earthquake</button>
+            <button class="btn btn-outline" id="loadPresetFireBtn">🔥 High-Rise Fire</button>
+            <button class="btn btn-outline" id="streamRandomCallBtn">🎲 +1 Random</button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="triage-table" id="triageTable">
+            <thead>
+              <tr>
+                <th width="40">#</th>
+                <th width="105">Ticket ID</th>
+                <th width="115">DEPI Score</th>
+                <th width="125">Triage Tier</th>
+                <th>Caller & Location</th>
+                <th>Hazard Context</th>
+                <th width="50" title="Medical Urgency (1-10)">Med</th>
+                <th width="50" title="Environmental Hazard (1-10)">Env</th>
+                <th width="65" title="Vulnerability Multiplier">Vuln</th>
+                <th width="85" title="Elapsed Wait Time">Wait</th>
+                <th width="110">Status</th>
+                <th width="120">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="triageTableBody">
+              <!-- Dynamically populated rows -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Right Panel: Radar Map & Fleet Monitor -->
+      <aside class="side-panel">
+        <!-- Interactive Radar Incident Zone Canvas -->
+        <div class="glass-panel radar-panel">
+          <div class="radar-header">
+            <h3>🌐 Crisis Radar & Geolocation Zone</h3>
+            <span class="live-dot">LIVE SCAN</span>
+          </div>
+          <div class="canvas-container">
+            <canvas id="radarCanvas" width="340" height="240"></canvas>
+          </div>
+          <div class="radar-legend">
+            <span class="legend-item"><span class="dot red"></span> Code Red</span>
+            <span class="legend-item"><span class="dot orange"></span> Urgent</span>
+            <span class="legend-item"><span class="dot yellow"></span> Delayed</span>
+            <span class="legend-item"><span class="dot green"></span> Minor</span>
+          </div>
+        </div>
+
+        <!-- Fleet Resource Deployment -->
+        <div class="glass-panel fleet-panel">
+          <div class="fleet-header">
+            <h3>🚑 Emergency Fleet Units</h3>
+            <button class="btn-text" id="resetFleetBtn">Reset All</button>
+          </div>
+          <div class="fleet-list" id="fleetUnitList">
+            <!-- Units injected by JS -->
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+  <!-- MODAL 1: New Distress Call Intake -->
+  <div class="modal-backdrop" id="intakeModal">
+    <div class="modal-window glass-panel">
+      <div class="modal-header">
+        <h3>📝 Log Inbound Emergency Distress Call</h3>
+        <button class="btn-close" id="closeIntakeModal">&times;</button>
+      </div>
+      <form id="intakeForm" class="modal-body">
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="callerName">Caller Full Name</label>
+            <input type="text" id="callerName" required value="Subham Das" class="form-control">
+          </div>
+          <div class="form-group flex-1">
+            <label for="callerPhone">Contact Phone</label>
+            <input type="text" id="callerPhone" required value="+91-98302-44551" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label for="callLocation">Incident Location / Landmark</label>
+            <input type="text" id="callLocation" required value="Bypass Junction near Pier 12" class="form-control">
+          </div>
+          <div class="form-group flex-1">
+            <label for="disasterType">Disaster Category</label>
+            <select id="disasterType" class="form-control">
+              <option value="Urban Flood">Urban Flood</option>
+              <option value="Earthquake">Earthquake</option>
+              <option value="Urban Fire">Urban Fire</option>
+              <option value="Chemical Hazard">Chemical Hazard</option>
+              <option value="Structural Collapse">Structural Collapse</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Urgency Sliders -->
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="medSlider">Medical Urgency (M): <span id="medValDisplay" class="badge-num text-red">8 / 10</span></label>
+          </div>
+          <input type="range" id="medSlider" min="1" max="10" value="8" class="slider-control">
+          <div class="slider-subtext">1: Minor scratches &bull; 5: Stable fracture &bull; 10: Unconscious / Cardiac arrest / Asphyxiation</div>
+        </div>
+
+        <div class="slider-group">
+          <div class="slider-header">
+            <label for="envSlider">Environmental Hazard (H): <span id="envValDisplay" class="badge-num text-amber">7 / 10</span></label>
+          </div>
+          <input type="range" id="envSlider" min="1" max="10" value="7" class="slider-control">
+          <div class="slider-subtext">1: Safe shelter &bull; 5: Knee floodwaters &bull; 10: Active rapid flame / Submerged structure / Gas leak</div>
+        </div>
+
+        <!-- Vulnerability Flags -->
+        <div class="vulnerability-options">
+          <label class="section-title">Vulnerable Demographics Present:</label>
+          <div class="checkbox-grid">
+            <label class="chk-label"><input type="checkbox" id="chkInfant"> <span>Infant (&lt; 2 yrs)</span></label>
+            <label class="chk-label"><input type="checkbox" id="chkChild"> <span>Children (3-12 yrs)</span></label>
+            <label class="chk-label"><input type="checkbox" id="chkElderly" checked> <span>Elderly (&gt; 65 yrs)</span></label>
+            <label class="chk-label"><input type="checkbox" id="chkDisabled"> <span>Physically Disabled</span></label>
+            <label class="chk-label"><input type="checkbox" id="chkPregnant"> <span>Pregnant</span></label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="callNarrative">Incident Narrative / Dispatch Notes</label>
+          <textarea id="callNarrative" rows="2" class="form-control" placeholder="Describe victim status and immediate physical threats...">Water ingress rising rapidly, senior citizen unable to walk unassisted.</textarea>
+        </div>
+
+        <!-- Real-Time Estimated DEPI Score Preview -->
+        <div class="depi-preview-box">
+          <div class="preview-title">Real-Time Algorithmic DEPI Projection:</div>
+          <div class="preview-score-row">
+            <span class="preview-score" id="previewDepiScore">63.0</span>
+            <span class="triage-badge badge-orange" id="previewCategory">CODE ORANGE</span>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelIntakeBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">➕ Evaluate & Enqueue via Max-Heap</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Formula Transparency Inspector -->
+  <div class="modal-backdrop" id="formulaModal">
+    <div class="modal-window glass-panel inspector-modal">
+      <div class="modal-header">
+        <h3>🔍 DEPI Mathematical Formula Breakdown</h3>
+        <button class="btn-close" id="closeFormulaModal">&times;</button>
+      </div>
+      <div class="modal-body" id="formulaModalContent">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Benchmark Defense -->
+  <div class="modal-backdrop" id="benchmarkModal">
+    <div class="modal-window glass-panel benchmark-modal">
+      <div class="modal-header">
+        <h3>⚡ Algorithmic Computational Benchmark</h3>
+        <button class="btn-close" id="closeBenchmarkModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="benchmark-intro">Comparative stress-test evaluating Custom Max-Heap Priority Queue (<strong>O(log N)</strong>) vs Naive Array Linear Scanning (<strong>O(N)</strong>) during disaster call spikes.</p>
+        <div id="benchmarkLoading" class="loading-state">Running algorithmic test suite across 5,000 synthetic calls...</div>
+        <div id="benchmarkContent" style="display: none;">
+          <table class="benchmark-table">
+            <thead>
+              <tr>
+                <th>Call Volume (N)</th>
+                <th>Heap Push O(log N)</th>
+                <th>Heap Pop(100)</th>
+                <th>Naive Pop(100) O(N)</th>
+                <th>Extraction Speedup</th>
+              </tr>
+            </thead>
+            <tbody id="benchmarkTableBody"></tbody>
+          </table>
+          <div class="complexity-summary-box">
+            <h4>Python Lab Theoretical Complexity Verification:</h4>
+            <ul>
+              <li><strong>Enqueue:</strong> Binary Max-Heap inserts in <code>O(log N)</code> compared to list sorting <code>O(N log N)</code>.</li>
+              <li><strong>Dispatch Root:</strong> Extracts maximum in <code>O(log N)</code> using sift-down heap invariant.</li>
+              <li><strong>Dynamic Reheapify:</strong> Bottom-up heap construction runs in linear <code>O(N)</code> time during wait-time aging ticks.</li>
+              <li><strong>Lookup:</strong> Hash table auxiliary map achieves <code>O(1)</code> ticket ID retrieval.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
